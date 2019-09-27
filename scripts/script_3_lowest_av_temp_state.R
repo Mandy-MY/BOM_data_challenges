@@ -11,6 +11,11 @@ BOM_data_station_records <- BOM_data_Temps %>% # takes the previous dataframe an
   filter(Temp_max >= 0) %>% # filters for values in Temp_max
   filter(Rainfall >= 0) # filters for values in rainfall
 
+#first need to use the BOM_data_station_records data frame and create a column for the temperature difference between max and min temps
+
+BOM_data_Temps_all <- BOM_data_station_records %>% 
+  mutate(Temp_diff = (as.numeric(Temp_max) - as.numeric(Temp_min)))# creates a new calculated column taking the character values and treating them as numeric values
+
 #Question: Which State saw the lowest average daily temperature difference?
 
 #we don't have State informtation in the BOM_data_station_records so we need to get this from the BOM_stations.csv using gather
@@ -26,12 +31,14 @@ BOM_stations_tidy <- BOM_stations %>% #create a tidy dataframe
   spread(info,stations_details) %>%  # spread the data back out but now it will display the stations_number against the other variables
   mutate(station_number = as.numeric(station_number)) # gets over the issue that it created the column as chr, because it needs to be dbl to join in teh next step
 
-#now we have tidy data we need to assign this tidy data to the BOM_data_station_records by Joining it
+#now we have tidy data we need to assign this tidy data to the BOM_data_Temps_all by Joining it
 
-BOM_stations_all <- full_join(BOM_data_station_records,BOM_stations_tidy, by = c("Station_number" = "station_number")) #but the station number in the two data files is different (chr vs dbl)
+BOM_stations_all <- full_join(BOM_data_Temps_all,BOM_stations_tidy, by = c("Station_number" = "station_number")) #but the station number in the two data files is different (chr vs dbl, see line 17 for the fix)
 
 #now we have joined data we need to group by state and calcualte the mean difference
 
 BOM_stations_all %>% 
   group_by(state) %>% 
-  summarise(Mean_State_Temp_diff = mean(Temp_diff))
+  summarise(Mean_State_Temp_diff = mean(Temp_diff)) %>% 
+  arrange(Mean_State_Temp_diff) %>% 
+  write_csv(path = "results/Mean_State_Temp_diff.csv") #write the result to a file in the results folder
